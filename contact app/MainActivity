@@ -1,41 +1,55 @@
-package com.example.collegelabapp;
+package com.example.contact;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
-import android.view.View;
+import android.provider.ContactsContract;
 import android.widget.Button;
-import android.widget.EditText;
-
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
 
-    EditText id, password;
-    Button loginBtn;
+    Button selectContactBtn;
+    int PICK_CONTACT = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        id = findViewById(R.id.etID);
-        password = findViewById(R.id.etPassword);
-        loginBtn = findViewById(R.id.btnLogin);
+        selectContactBtn = findViewById(R.id.selectContactBtn);
 
-        loginBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-                String user = id.getText().toString();
-                String pass = password.getText().toString();
-
-                if(user.equals("parth") && pass.equals("parth@123"))
-                {
-                    Intent intent = new Intent(MainActivity.this, com.example.collegelabapp.DashboardActivity.class);
-                    startActivity(intent);
-                }
-
-            }
+        selectContactBtn.setOnClickListener(v -> {
+            // Open contacts
+            Intent intent = new Intent(Intent.ACTION_PICK,
+                    ContactsContract.CommonDataKinds.Phone.CONTENT_URI);
+            startActivityForResult(intent, PICK_CONTACT);
         });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode == PICK_CONTACT && resultCode == RESULT_OK && data != null) {
+            Uri contactUri = data.getData();
+            Cursor cursor = getContentResolver().query(contactUri, null, null, null, null);
+
+            if(cursor != null && cursor.moveToFirst()) {
+                @SuppressLint("Range") String name = cursor.getString(
+                        cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
+                @SuppressLint("Range") String number = cursor.getString(
+                        cursor.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                cursor.close();
+
+                Intent intent = new Intent(MainActivity.this, com.example.contact.ActionActivity.class);
+                intent.putExtra("name", name);
+                intent.putExtra("number", number);
+                startActivity(intent);
+            }
+        }
     }
 }
